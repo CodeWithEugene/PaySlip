@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -22,17 +22,8 @@ import HashChip from '../components/HashChip';
 import EmptyState from '../components/EmptyState';
 import { useToast } from '../components/ToastContext';
 import { chain } from '../services/chain';
-import type { VerificationRequest, VerifiedResult } from '../services/types';
+import type { PayRun, VerificationRequest, VerifiedResult } from '../services/types';
 import { currentPeriod, formatCurrency, formatPeriod, formatTimestamp } from '../utils/format';
-
-function periodOptions(): number[] {
-  const cur = currentPeriod();
-  const y = Math.floor(cur / 100);
-  const m = cur % 100;
-  const prev = m === 1 ? (y - 1) * 100 + 12 : cur - 1;
-  const prev2 = (prev % 100) === 1 ? (Math.floor(prev / 100) - 1) * 100 + 12 : prev - 1;
-  return [cur, prev, prev2];
-}
 
 /** Result view for /verify/:requestId — the demo's money shot. */
 function ResultView({ requestId }: { requestId: string }) {
@@ -140,15 +131,37 @@ export default function Verify() {
 
   const [requests, setRequests] = useState<VerificationRequest[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
+  const [payRuns, setPayRuns] = useState<PayRun[]>([]);
 
   const loadRequests = useCallback(async () => {
     setListError(null);
     try {
-      setRequests(await chain.listRequests());
+      const [reqs, runs] = await Promise.all([
+        chain.listRequests(),
+        chain.getPayRuns(),
+      ]);
+      setRequests(reqs);
+      setPayRuns(runs);
     } catch (e) {
       setListError(e instanceof Error ? e.message : 'Failed to load requests.');
     }
   }, []);
+
+  const periodOptions = useMemo(() => {
+    const cur = currentPeriod();
+    const optionsSet = new Set<number>();
+    const y = Math.floor(cur / 100);
+    const m = cur % 100;
+    const prev = m === 1 ? (y - 1) * 100 + 12 : cur - 1;
+    const prev2 = (prev % 100) === 1 ? (Math.floor(prev / 100) - 1) * 100 + 12 : prev - 1;
+    optionsSet.add(cur);
+    optionsSet.add(prev);
+    optionsSet.add(prev2);
+    payRuns.forEach((run) => {
+      optionsSet.add(run.period);
+    });
+    return Array.from(optionsSet).sort((a, b) => b - a);
+  }, [payRuns]);
 
   useEffect(() => {
     if (!requestId) void loadRequests();
@@ -233,7 +246,7 @@ export default function Verify() {
                   onChange={(e) => setPeriod(Number(e.target.value))}
                   fullWidth
                 >
-                  {periodOptions().map((p) => (
+                  {periodOptions.map((p) => (
                     <MenuItem key={p} value={p}>
                       {formatPeriod(p)}
                     </MenuItem>

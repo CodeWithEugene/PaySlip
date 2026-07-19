@@ -58,7 +58,16 @@ export default function Employer() {
   const [runError, setRunError] = useState<string | null>(null);
   const [lastRun, setLastRun] = useState<PayRun | null>(null);
 
-  const period = currentPeriod();
+  const period = useMemo(() => {
+    if (payRuns.length === 0) return currentPeriod();
+    const lastRunPeriod = payRuns[0].period;
+    const y = Math.floor(lastRunPeriod / 100);
+    const m = lastRunPeriod % 100;
+    const nextM = m === 12 ? 1 : m + 1;
+    const nextY = m === 12 ? y + 1 : y;
+    return nextY * 100 + nextM;
+  }, [payRuns]);
+
   const totalPay = useMemo(
     () => employees.reduce((s, e) => s + (DEFAULT_AMOUNTS[e.id] ?? 0), 0),
     [employees],

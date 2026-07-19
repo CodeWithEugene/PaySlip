@@ -19,7 +19,7 @@ import {
  * the network. State persists to localStorage so a demo survives reloads.
  */
 
-const STORE_KEY = 'payslip.demo.v1';
+const STORE_KEY = 'payslip.demo.v2';
 
 async function sha256Hex(input: string): Promise<string> {
   const bytes = new TextEncoder().encode(input);
@@ -59,7 +59,7 @@ const DEMO_SALARIES: Record<string, number> = {
 function emptyState(): DemoState {
   return {
     employer: null,
-    vaultBalance: 2500000, // $25,000.00 funded vault
+    vaultBalance: 10000000, // $100,000.00 funded vault
     payRuns: [],
     commitments: [],
     payslips: [],
