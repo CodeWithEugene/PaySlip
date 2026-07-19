@@ -1,0 +1,141 @@
+// PaySlip — confidential payroll where every payment doubles as a ZK income credential.
+//
+// Public ledger state holds ONLY: employer registry entries, opaque payslip
+// commitments (Merkle tree), verification requests, and boolean results.
+// Amounts, recipients, and payslip contents never touch the chain.
+
+pragma language_version >= 0.16;
+
+import CompactStandardLibrary;
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export enum REQUEST_STATUS { open, verified }
+
+// The private payslip preimage. Lives ONLY in the employee's local state.
+export struct PayslipPreimage {
+  employerId: Bytes<32>;
+  amount: Uint<64>;    // minor units (e.g. cents of tUSD)
+  period: Uint<32>;    // pay period encoded YYYYMM
+  salt: Bytes<32>;     // blinding factor
+}
+
+export struct VerificationRequest {
+  threshold: Uint<64>; // public: "prove income >= threshold"
+  period: Uint<32>;    // public: for which pay period
+  label: Opaque<"string">;
+  status: REQUEST_STATUS;
+}
+
+// ---------------------------------------------------------------------------
+// Public ledger state
+// ---------------------------------------------------------------------------
+
+export ledger employers: Map<Bytes<32>, Opaque<"string">>;
+
+// Append-only commitment tree. A leaf = persistentHash(PayslipPreimage).
+// Inserts are gated by employer registration, so tree membership itself
+// proves "issued by a registered employer" without revealing which one.
+export ledger payslips: HistoricMerkleTree<10, Bytes<32>>;
+
+export ledger requestCount: Counter;
+export ledger requests: Map<Field, VerificationRequest>;
+export ledger results: Map<Field, Boolean>;
+
+// ---------------------------------------------------------------------------
+// Witnesses — provided by the caller's device, never revealed
+// ---------------------------------------------------------------------------
+
+witness employerSecretKey(): Bytes<32>;
+witness payslipPreimage(requestId: Field): PayslipPreimage;
+witness findPayslipPath(commitment: Bytes<32>): MerkleTreePath<10, Bytes<32>>;
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+export circuit employerPublicKey(sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "payslip:employer:v1"), sk]);
+}
+
+export circuit payslipCommitment(slip: PayslipPreimage): Bytes<32> {
+  return persistentHash<PayslipPreimage>(slip);
+}
+
+// ---------------------------------------------------------------------------
+// Circuits (entry points)
+// ---------------------------------------------------------------------------
+
+// Employer self-registers under a hashed key. Name is public by design.
+export circuit registerEmployer(name: Opaque<"string">): [] {
+  const id = disclose(employerPublicKey(employerSecretKey()));
+  assert(!employers.member(id), "employer already registered");
+  employers.insert(id, disclose(name));
+}
+
+// Employer posts one payslip commitment per employee per pay run.
+// The chain learns exactly one opaque 32-byte hash. The matching preimage
+// is handed to the employee off-chain (or via encrypted channel).
+export circuit postPayslip(commitment: Bytes<32>): [] {
+  const id = disclose(employerPublicKey(employerSecretKey()));
+  assert(employers.member(id), "caller is not a registered employer");
+  payslips.insert(disclose(commitment));
+}
+
+// Anyone (landlord, lender) opens a request: "prove income >= threshold
+// for period P". Entirely public — it contains no sensitive data.
+export circuit createRequest(
+  threshold: Uint<64>,
+  period: Uint<32>,
+  label: Opaque<"string">
+): Field {
+  requestCount.increment(1);
+  const id = disclose(requestCount.read() as Field);
+  requests.insert(id, VerificationRequest {
+    threshold: disclose(threshold),
+    period: disclose(period),
+    label: disclose(label),
+    status: REQUEST_STATUS.open
+  });
+  return id;
+}
+
+// The crown jewel. The employee proves, in zero knowledge:
+//   (a) they hold a payslip preimage whose commitment is in the on-chain tree
+//       (Merkle path — does NOT reveal which leaf),
+//   (b) that commitment was necessarily posted by a registered employer
+//       (tree inserts are employer-gated),
+//   (c) the payslip is for the requested period,
+//   (d) amount >= threshold.
+// The public ledger learns ONE bit: results[requestId] = true.
+export circuit proveIncome(requestId: Field): [] {
+  const rid = disclose(requestId);
+  assert(requests.member(rid), "unknown verification request");
+  const req = requests.lookup(rid);
+  assert(req.status == REQUEST_STATUS.open, "request already settled");
+
+  const slip = payslipPreimage(requestId);
+  const c = payslipCommitment(slip);
+
+  const path = findPayslipPath(c);
+  assert(path.leaf == c, "merkle path does not open the payslip commitment");
+  // Disclosing the recomputed root reveals membership only — the root is
+  // checked against the tree's public history; the leaf stays hidden.
+  assert(
+    payslips.checkRoot(disclose(merkleTreePathRoot<10, Bytes<32>>(path))),
+    "payslip commitment not found on ledger"
+  );
+
+  assert(slip.period == req.period, "payslip is for a different pay period");
+  assert(slip.amount >= req.threshold, "income below requested threshold");
+
+  results.insert(rid, true);
+  requests.insert(rid, VerificationRequest {
+    threshold: req.threshold,
+    period: req.period,
+    label: req.label,
+    status: REQUEST_STATUS.verified
+  });
+}
