@@ -1,5 +1,7 @@
 /** Real Midnight DApp Connector implementation. DEMO_MODE never imports this service. */
-import * as PaySlip from '../../contracts/managed/payslip/contract/index.js';
+// `contracts/build` is the checked-in Compact runtime artifact. Keep the web
+// build independent from local-only proof output under `contracts/managed`.
+import * as PaySlip from '../../contracts/build/contract/index.js';
 import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
 import { fromHex, toHex } from '@midnight-ntwrk/midnight-js-protocol/compact-runtime';
 import { Binding, Proof, SignatureEnabled, Transaction } from '@midnight-ntwrk/midnight-js-protocol/ledger';

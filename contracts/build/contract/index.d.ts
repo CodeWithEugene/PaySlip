@@ -3,6 +3,7 @@ import type * as __compactRuntime from '@midnight-ntwrk/compact-runtime';
 export enum REQUEST_STATUS { open = 0, verified = 1 }
 
 export type PayslipPreimage = { employerId: Uint8Array;
+                                employeeId: Uint8Array;
                                 amount: bigint;
                                 period: bigint;
                                 salt: Uint8Array
@@ -16,6 +17,7 @@ export type VerificationRequest = { threshold: bigint;
 
 export type Witnesses<PS> = {
   employerSecretKey(context: __compactRuntime.WitnessContext<Ledger, PS>): [PS, Uint8Array];
+  employeeSecretKey(context: __compactRuntime.WitnessContext<Ledger, PS>): [PS, Uint8Array];
   payslipPreimage(context: __compactRuntime.WitnessContext<Ledger, PS>,
                   requestId_0: bigint): [PS, PayslipPreimage];
   findPayslipPath(context: __compactRuntime.WitnessContext<Ledger, PS>,
@@ -51,11 +53,14 @@ export type ProvableCircuits<PS> = {
 
 export type PureCircuits = {
   employerPublicKey(sk_0: Uint8Array): Uint8Array;
+  employeePublicKey(sk_0: Uint8Array): Uint8Array;
   payslipCommitment(slip_0: PayslipPreimage): Uint8Array;
 }
 
 export type Circuits<PS> = {
   employerPublicKey(context: __compactRuntime.CircuitContext<PS>,
+                    sk_0: Uint8Array): __compactRuntime.CircuitResults<PS, Uint8Array>;
+  employeePublicKey(context: __compactRuntime.CircuitContext<PS>,
                     sk_0: Uint8Array): __compactRuntime.CircuitResults<PS, Uint8Array>;
   payslipCommitment(context: __compactRuntime.CircuitContext<PS>,
                     slip_0: PayslipPreimage): __compactRuntime.CircuitResults<PS, Uint8Array>;
@@ -85,6 +90,13 @@ export type Ledger = {
     pathForLeaf(index_0: bigint, leaf_0: Uint8Array): __compactRuntime.MerkleTreePath<Uint8Array>;
     findPathForLeaf(leaf_0: Uint8Array): __compactRuntime.MerkleTreePath<Uint8Array> | undefined;
     history(): Iterator<__compactRuntime.MerkleTreeDigest>
+  };
+  commitmentIndex: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): boolean;
+    [Symbol.iterator](): Iterator<[Uint8Array, boolean]>
   };
   readonly requestCount: bigint;
   requests: {
