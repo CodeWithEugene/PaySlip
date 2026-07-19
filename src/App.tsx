@@ -5,10 +5,13 @@ import Employer from './pages/Employer';
 import Employee from './pages/Employee';
 import Verify from './pages/Verify';
 import Ledger from './pages/Ledger';
+import Auth from './pages/Auth';
 
 export default function App() {
   return (
     <Routes>
+      <Route path="/sign-in" element={<Auth mode="sign-in" />} />
+      <Route path="/sign-up" element={<Auth mode="sign-up" />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Landing />} />
         <Route path="/employer" element={<Employer />} />

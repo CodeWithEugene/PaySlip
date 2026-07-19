@@ -79,31 +79,57 @@ The shipped experience defaults to `DEMO_MODE`. It uses a mock provider with det
 
 ---
 
-### Option B: Local Network & Proof Server Setup
+### Neon Auth: Sign Up, Sign In, and Sessions
 
-To configure the application with the local Midnight proof server:
+PaySlip uses Neon Auth for email-and-password accounts. Neon stores the user and session records in its managed `neon_auth` schema; salary data, payslip witnesses, and wallet keys are never sent to Neon.
 
-1. **Start the Proof Server:**
-   Ensure Docker is running and start the proof server container:
-   ```bash
-   docker compose -f docker/proof-server.yml up -d
-   ```
-   *(Note: If you are on Apple Silicon/ARM, update the image tag to use the community-supported `bricktowers/proof-server` workaround image instead).*
+The Vercel Neon integration provides `VITE_NEON_AUTH_URL` to the deployed app. For local authentication, copy the browser-safe Auth URL from **Neon Console → Auth → Configuration** into `.env`:
 
-2. **Compile the Smart Contract:**
-   Make sure the Compact compiler is installed, then build:
-   ```bash
-   compact update 0.31.1
-   compact compile contracts/payslip.compact contracts/build
-   ```
+```bash
+VITE_NEON_AUTH_URL=https://YOUR-PROJECT.auth.neon.tech
+```
 
-3. **Disable Demo Mode:**
-   In `.env`, set `VITE_DEMO_MODE=false` and configure your Midnight testnet endpoint and RPC provider URL.
+In **Neon Console → Auth**, add both `http://127.0.0.1:5173` and `https://payslip-midnight-hackathon.vercel.app` to the allowed origins. Then use `/sign-up` to create an account and `/sign-in` to restore a session. The navbar changes from **Sign In / Sign Up** to **Sign Out** when a session is active.
 
-4. **Run the Frontend:**
-   ```bash
-   npm run dev
-   ```
+---
+
+### Option B: Local Midnight Network (Contract + Proof Server)
+
+The repository ships a pinned local node, indexer, and proof server. Docker Desktop must be running first.
+
+```bash
+cp .env.example .env
+npm install
+npm run setup:local
+npm run test:e2e
+VITE_DEMO_MODE=false npm run dev
+```
+
+`npm run setup:local` waits for the three services, compiles `contracts/payslip.compact`, copies its ZK assets to `public/midnight/`, and deploys to the local `undeployed` network. It records the resulting address in the ignored `.midnight-state.json` file. `npm run test:e2e` reconnects to that contract and verifies that the indexer can read its state.
+
+Useful commands:
+
+```bash
+npm run compile:contract  # Compile contract + browser proof assets
+npm run test:contract     # Deterministic commitment + threshold checks
+npm run check-balance     # Inspect the headless deploy wallet
+npm run clean:midnight    # Remove only generated Midnight state
+docker compose logs -f    # Diagnose local services
+```
+
+### Preprod Funding & A Midnight Wallet
+
+In 1AM, first switch the wallet network to **Preprod**, then use **Receive → Unshielded → Copy**. A valid preprod address starts with `mn_addr_preprod`, not `mn_addr`. Paste that fresh address into the preprod faucet to request tNIGHT. A mainnet `mn_addr` is correctly rejected by the preprod faucet.
+
+A public address never grants signing authority: the app’s **Connect Wallet** button uses the DApp Connector and keeps signing in your wallet. 1AM and Lace are both suitable DApp Connector wallets. Do not put a recovery phrase in `.env`, source control, or chat.
+
+The optional headless deployment command derives a separate wallet from `MIDNIGHT_WALLET_SEED`; do not put any wallet seed phrase in source control. Use it only if you intentionally fund the address printed by `npm run wallet:address -- --network preprod`:
+
+```bash
+npm run deploy:preprod
+```
+
+After deployment, copy the emitted address into `VITE_MIDNIGHT_CONTRACT_ADDRESS`, set `VITE_DEMO_MODE=false`, and restart Vite. The browser will request a Midnight wallet connection before any transaction action.
 
 Suggested video flow:
 
@@ -134,9 +160,9 @@ compact compile contracts/payslip.compact contracts/build
 
 The generated artifacts include prover and verifier keys for `registerEmployer`, `postPayslip`, `createRequest`, and `proveIncome`.
 
-### Testnet status
+### Deployment status
 
-The public repository currently ships the complete contract artifacts and a demo-mode frontend. The network provider in [`src/services/midnight.ts`](src/services/midnight.ts) documents the exact Midnight.js / Lace / proof-server integration seam, but it has **not yet been exercised against testnet**, and there is no deployed address or transaction hash to claim. Set `VITE_DEMO_MODE=false` only after wiring that provider with a funded wallet and current testnet endpoints. This is intentional disclosure, not a simulated “testnet” claim.
+The contract, pinned local devnet stack, ZK assets, DApp Connector dependency, and deployment/e2e tooling are included. No public-network contract address or transaction hash is claimed in this README until a funded wallet completes a real deployment; record those values here immediately after `npm run deploy:preprod` succeeds. The application’s reliable recorded-video fallback remains `DEMO_MODE`.
 
 ## Product case and roadmap
 
@@ -155,6 +181,8 @@ Next:
 contracts/      Compact source and compiled proof artifacts
 src/services/   One typed chain-service seam plus the demo provider
 public/         Favicon, social image, and web manifest assets
+scripts/        Deployment, local-devnet, and contract verification tools
+docker-compose.yml  Pinned local Midnight node, indexer, and proof server
 ```
 
 ## Team and attribution

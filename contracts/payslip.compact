@@ -17,6 +17,7 @@ export enum REQUEST_STATUS { open, verified }
 // The private payslip preimage. Lives ONLY in the employee's local state.
 export struct PayslipPreimage {
   employerId: Bytes<32>;
+  employeeId: Bytes<32>; // hash of the employee's private credential key
   amount: Uint<64>;    // minor units (e.g. cents of tUSD)
   period: Uint<32>;    // pay period encoded YYYYMM
   salt: Bytes<32>;     // blinding factor
@@ -39,6 +40,10 @@ export ledger employers: Map<Bytes<32>, Opaque<"string">>;
 // Inserts are gated by employer registration, so tree membership itself
 // proves "issued by a registered employer" without revealing which one.
 export ledger payslips: HistoricMerkleTree<10, Bytes<32>>;
+// HistoricMerkleTree supports private membership proofs but cannot be
+// enumerated by an explorer. This index exposes the same opaque leaves—never
+// their preimages—so public observers can independently inspect the ledger.
+export ledger commitmentIndex: Map<Bytes<32>, Boolean>;
 
 export ledger requestCount: Counter;
 export ledger requests: Map<Field, VerificationRequest>;
@@ -49,6 +54,7 @@ export ledger results: Map<Field, Boolean>;
 // ---------------------------------------------------------------------------
 
 witness employerSecretKey(): Bytes<32>;
+witness employeeSecretKey(): Bytes<32>;
 witness payslipPreimage(requestId: Field): PayslipPreimage;
 witness findPayslipPath(commitment: Bytes<32>): MerkleTreePath<10, Bytes<32>>;
 
@@ -58,6 +64,10 @@ witness findPayslipPath(commitment: Bytes<32>): MerkleTreePath<10, Bytes<32>>;
 
 export circuit employerPublicKey(sk: Bytes<32>): Bytes<32> {
   return persistentHash<Vector<2, Bytes<32>>>([pad(32, "payslip:employer:v1"), sk]);
+}
+
+export circuit employeePublicKey(sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "payslip:employee:v1"), sk]);
 }
 
 export circuit payslipCommitment(slip: PayslipPreimage): Bytes<32> {
@@ -80,8 +90,11 @@ export circuit registerEmployer(name: Opaque<"string">): [] {
 // is handed to the employee off-chain (or via encrypted channel).
 export circuit postPayslip(commitment: Bytes<32>): [] {
   const id = disclose(employerPublicKey(employerSecretKey()));
+  const publicCommitment = disclose(commitment);
   assert(employers.member(id), "caller is not a registered employer");
-  payslips.insert(disclose(commitment));
+  assert(!commitmentIndex.member(publicCommitment), "payslip commitment already posted");
+  payslips.insert(publicCommitment);
+  commitmentIndex.insert(publicCommitment, true);
 }
 
 // Anyone (landlord, lender) opens a request: "prove income >= threshold
@@ -118,6 +131,10 @@ export circuit proveIncome(requestId: Field): [] {
 
   const slip = payslipPreimage(requestId);
   const c = payslipCommitment(slip);
+
+  // Possession of a copied payslip preimage is insufficient: the prover must
+  // also control the private key bound into that credential.
+  assert(slip.employeeId == employeePublicKey(employeeSecretKey()), "payslip belongs to another employee");
 
   const path = findPayslipPath(c);
   assert(path.leaf == c, "merkle path does not open the payslip commitment");

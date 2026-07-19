@@ -3,7 +3,11 @@ dist/
 dist-ssr/
 contracts/build/keys/
 contracts/build/zkir/
+contracts/managed/
 .env
+.midnight-state.json
+.midnight-wallet-state/
+midnight-level-db/
 .claude-flow/
 claude-flow/
 *.local
@@ -23,3 +27,4 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+.vercel

@@ -10,6 +10,8 @@ import '@fontsource/space-grotesk/600.css';
 import '@fontsource/space-grotesk/700.css';
 import { theme } from './theme/theme';
 import { ToastProvider } from './components/ToastContext';
+import { WalletProvider } from './components/WalletContext';
+import { AuthProvider } from './components/AuthContext';
 import App from './App';
 
 createRoot(document.getElementById('root')!).render(
@@ -17,11 +19,15 @@ createRoot(document.getElementById('root')!).render(
     <InitColorSchemeScript attribute="class" defaultMode="dark" />
     <ThemeProvider theme={theme} defaultMode="dark" noSsr>
       <CssBaseline />
-      <ToastProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </ToastProvider>
+      <AuthProvider>
+        <WalletProvider>
+          <ToastProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </ToastProvider>
+        </WalletProvider>
+      </AuthProvider>
     </ThemeProvider>
   </StrictMode>,
 );

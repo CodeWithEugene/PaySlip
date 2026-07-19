@@ -25,6 +25,8 @@ import LightModeIcon from '@mui/icons-material/LightModeOutlined';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import BrandLogo from './BrandLogo';
 import { useToast } from './ToastContext';
+import { useWallet } from './WalletContext';
+import { useAuth } from './AuthContext';
 import { chain, IS_DEMO } from '../services/chain';
 import { mono } from '../theme/theme';
 
@@ -60,6 +62,8 @@ export default function Layout() {
   const [resettingDemo, setResettingDemo] = useState(false);
   const location = useLocation();
   const toast = useToast();
+  const wallet = useWallet();
+  const auth = useAuth();
   const activeNav = NAV.find((n) => n.to === '/' ? location.pathname === '/' : location.pathname.startsWith(n.to));
 
   useEffect(() => {
@@ -77,6 +81,24 @@ export default function Layout() {
     } catch (error) {
       toast(error instanceof Error ? error.message : 'Could not restore demo data. Please try again.', 'error');
       setResettingDemo(false);
+    }
+  };
+
+  const connectWallet = async () => {
+    try {
+      await wallet.connect();
+      toast('Midnight wallet connected.');
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Could not connect to a Midnight wallet.', 'error');
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      await auth.signOut();
+      toast('You have been signed out.');
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Could not sign you out. Please try again.', 'error');
     }
   };
 
@@ -129,17 +151,27 @@ export default function Layout() {
                   />
                 </Tooltip>
               )}
-              <Button
-                href={GITHUB_URL}
-                target="_blank"
-                rel="noopener"
-                size="small"
-                variant="outlined"
-                startIcon={<GitHubIcon />}
-                sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
-              >
-                GitHub
-              </Button>
+              {!IS_DEMO && (
+                <Button
+                  onClick={() => void connectWallet()}
+                  size="small"
+                  variant={wallet.status === 'connected' ? 'outlined' : 'contained'}
+                  disabled={wallet.status === 'connecting'}
+                  sx={{ display: { xs: 'none', sm: 'inline-flex' }, fontFamily: mono, maxWidth: 180 }}
+                >
+                  {wallet.status === 'connected' && wallet.address ? `${wallet.address.slice(0, 8)}…${wallet.address.slice(-6)}` : wallet.status === 'connecting' ? 'Connecting…' : 'Connect Wallet'}
+                </Button>
+              )}
+              {auth.status === 'ready' && (auth.user ? (
+                <Button onClick={() => void signOut()} size="small" variant="outlined" sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
+                  Sign Out
+                </Button>
+              ) : (
+                <Stack direction="row" spacing={0.75} sx={{ display: { xs: 'none', sm: 'flex' } }}>
+                  <Button component={RouterLink} to="/sign-in" size="small" variant="text">Sign In</Button>
+                  <Button component={RouterLink} to="/sign-up" size="small" variant="contained">Sign Up</Button>
+                </Stack>
+              ))}
               <ModeToggle />
               <IconButton
                 aria-label="open navigation menu"
@@ -182,6 +214,26 @@ export default function Layout() {
               DEMO_MODE — each section uses its own mock wallet, so one person can play all three roles.
             </Typography>
           )}
+          {!IS_DEMO && (
+            <Box sx={{ px: 2, pt: 1 }}>
+              <Button fullWidth variant="contained" onClick={() => void connectWallet()} disabled={wallet.status === 'connecting'}>
+                {wallet.status === 'connected' ? 'Wallet Connected' : wallet.status === 'connecting' ? 'Connecting…' : 'Connect Midnight Wallet'}
+              </Button>
+            </Box>
+          )}
+          <Box sx={{ px: 2, pt: 2 }}>
+            {auth.status === 'ready' && (auth.user ? (
+              <Stack spacing={1}>
+                <Typography variant="caption" color="text.secondary">Signed In As {auth.user.email}</Typography>
+                <Button fullWidth variant="outlined" onClick={() => void signOut()}>Sign Out</Button>
+              </Stack>
+            ) : (
+              <Stack spacing={1}>
+                <Button component={RouterLink} to="/sign-up" variant="contained" fullWidth onClick={() => setDrawerOpen(false)}>Sign Up</Button>
+                <Button component={RouterLink} to="/sign-in" variant="outlined" fullWidth onClick={() => setDrawerOpen(false)}>Sign In</Button>
+              </Stack>
+            ))}
+          </Box>
         </Box>
       </Drawer>
 
