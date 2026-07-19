@@ -123,7 +123,7 @@ export default function Landing() {
       </Box>
 
       {/* How it works */}
-      <Container id="how-it-works" maxWidth={false} sx={{ px: { xs: 2, sm: 3, lg: 5, xl: 8 }, py: { xs: 6, md: 9 } }}>
+      <Container id="how-it-works" maxWidth={false} sx={{ px: { xs: 2, sm: 3, lg: 5, xl: 8 }, py: { xs: 6, md: 9 }, scrollMarginTop: 88 }}>
         <Typography variant="overline" color="primary.light" display="block" textAlign="center">
           How It Works
         </Typography>

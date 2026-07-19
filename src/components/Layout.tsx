@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link as RouterLink, NavLink, Outlet, useLocation } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
@@ -61,6 +61,12 @@ export default function Layout() {
   const location = useLocation();
   const toast = useToast();
   const activeNav = NAV.find((n) => n.to === '/' ? location.pathname === '/' : location.pathname.startsWith(n.to));
+
+  useEffect(() => {
+    if (!location.hash) return;
+    const targetId = decodeURIComponent(location.hash.slice(1));
+    window.requestAnimationFrame(() => document.getElementById(targetId)?.scrollIntoView());
+  }, [location.hash, location.pathname]);
 
   const resetDemo = async () => {
     setResettingDemo(true);
@@ -193,7 +199,16 @@ export default function Layout() {
                 Private payroll. Provable income. Zero disclosure.
               </Typography>
               <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap>
-                <Chip size="small" variant="outlined" label="Built on Midnight" />
+                <Chip
+                  component="a"
+                  href="https://midnight.network/"
+                  target="_blank"
+                  rel="noopener"
+                  clickable
+                  size="small"
+                  variant="outlined"
+                  label="Built on Midnight"
+                />
                 {IS_DEMO && (
                   <Button size="small" variant="text" onClick={() => void resetDemo()} disabled={resettingDemo}>
                     {resettingDemo ? 'Resetting…' : 'Reset Demo'}
@@ -204,7 +219,7 @@ export default function Layout() {
           </Grid>
           <Grid size={{ xs: 6, sm: 4, md: 2 }}>
             <FooterGroup title="Product">
-              <Link component={RouterLink} to="/#how-it-works">How it works</Link>
+              <Link component={RouterLink} to="/#how-it-works">How It Works</Link>
               <Link component={RouterLink} to="/employer">Employer</Link>
               <Link component={RouterLink} to="/employee">Employee</Link>
               <Link component={RouterLink} to="/verify">Verifier</Link>
@@ -212,8 +227,8 @@ export default function Layout() {
           </Grid>
           <Grid size={{ xs: 6, sm: 4, md: 2 }}>
             <FooterGroup title="Explore">
-              <Link component={RouterLink} to="/ledger">Public ledger</Link>
-              <Link href={GITHUB_URL} target="_blank" rel="noopener">Source code</Link>
+              <Link component={RouterLink} to="/ledger">Public Ledger</Link>
+              <Link href={GITHUB_URL} target="_blank" rel="noopener">Source Code</Link>
               <Link href="https://midnight.network/" target="_blank" rel="noopener">Midnight</Link>
               <Link href="https://midnight-hackathon-july-2026.devpost.com/" target="_blank" rel="noopener">Hackathon</Link>
             </FooterGroup>
@@ -225,7 +240,7 @@ export default function Layout() {
               </Typography>
               <Link href={GITHUB_URL} target="_blank" rel="noopener" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
                 <GitHubIcon sx={{ fontSize: 17 }} />
-                GitHub repository
+                GitHub Repository
               </Link>
             </FooterGroup>
           </Grid>
