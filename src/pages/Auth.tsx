@@ -74,11 +74,11 @@ export default function Auth({ mode }: { mode: AuthMode }) {
       <Box
         component="section"
         aria-label="PaySlip introduction"
-        sx={(theme) => ({
-          position: 'relative', minHeight: { xs: 320, md: '100dvh' }, overflow: 'hidden', bgcolor: 'background.default',
+        sx={{
+          position: 'relative', minHeight: { xs: 320, md: '100dvh' }, overflow: 'hidden', bgcolor: '#000000', color: '#F5F7F6',
           display: { xs: 'none', md: 'flex' }, alignItems: 'flex-end', p: { md: 6, lg: 9 },
-          '&::after': { content: '""', position: 'absolute', inset: 0, backgroundColor: theme.palette.background.default, opacity: 0.58 },
-        })}
+          '&::after': { content: '""', position: 'absolute', inset: 0, backgroundColor: '#000000', opacity: 0.58 },
+        }}
       >
         <Stack spacing={3} sx={{ position: 'relative', zIndex: 1, maxWidth: 540 }}>
           <BrandLogo size={46} />
@@ -86,7 +86,7 @@ export default function Auth({ mode }: { mode: AuthMode }) {
           <Typography variant="h1" sx={{ fontSize: 'clamp(3rem, 5vw, 5.4rem)', maxWidth: 520 }}>
             The Payment Is The Credential.
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 440, fontSize: '1.02rem' }}>
+          <Typography variant="body1" sx={{ maxWidth: 440, fontSize: '1.02rem', color: '#A3B0A9' }}>
             Run payroll confidentially, hold a reusable income credential, and disclose exactly one fact when it matters.
           </Typography>
           <Typography variant="caption" sx={{ color: 'primary.light', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
