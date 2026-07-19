@@ -1,9 +1,8 @@
-# ![PaySlip](src/assets/logo-animated.gif)
+<p align="center"><img src="src/assets/logo-animated.gif" alt="PaySlip" /></p>
 
 
-> **Private payroll. Provable income. Zero disclosure.**
+<p align="center"><strong>Private Payroll. Provable Income. Zero Disclosure.</strong></p>
 
-[![Midnight](https://img.shields.io/badge/Built%20for-Midnight-15994E?style=flat-square)](https://midnight.network/) [![License: MIT](https://img.shields.io/badge/License-MIT-15994E?style=flat-square)](LICENSE) [![Hackathon](https://img.shields.io/badge/MLH-Midnight%20Hackathon%202026-15994E?style=flat-square)](https://midnight-hackathon-july-2026.devpost.com/)
 
 PaySlip is confidential on-chain payroll where every private payment doubles as a reusable zero-knowledge income credential. An employee can prove they meet a threshold such as “income is at least $1,500 this month” without revealing their salary, employer, transaction history, or a bank statement.
 
