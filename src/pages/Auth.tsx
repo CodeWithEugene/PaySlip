@@ -16,7 +16,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOffOutlined';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import BrandLogo from '../components/BrandLogo';
 import { useAuth } from '../components/AuthContext';
-import logoPlain from '../assets/logo-plain.png';
+import salaryNeonImage from '../assets/salary-neon-vecteezy.jpg';
 
 type AuthMode = 'sign-in' | 'sign-up';
 
@@ -81,7 +81,7 @@ export default function Auth({ mode }: { mode: AuthMode }) {
           '&::after': { content: '""', position: 'absolute', inset: 0, backgroundColor: theme.palette.background.default, opacity: 0.58 },
         })}
       >
-        <Box component="img" src={logoPlain} alt="" aria-hidden="true" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.46, filter: 'grayscale(1) contrast(1.1)' }} />
+        <Box component="img" src={salaryNeonImage} alt="Yellow neon icon representing salary arriving" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.72, filter: 'contrast(1.08) saturate(0.8)' }} />
         <Stack spacing={3} sx={{ position: 'relative', zIndex: 1, maxWidth: 540 }}>
           <BrandLogo size={46} />
           <Typography variant="overline" color="primary.light">Private By Default</Typography>
@@ -95,6 +95,9 @@ export default function Auth({ mode }: { mode: AuthMode }) {
             Built On Midnight · Secured By Neon Auth
           </Typography>
         </Stack>
+        <Link href="https://www.vecteezy.com/vector-art/20971115-yellow-neon-icon-incoming-money-salary-transparent-background-yellow-neon-vector-icon-on-dark-background" target="_blank" rel="noopener" variant="caption" sx={{ position: 'absolute', zIndex: 1, right: 28, bottom: 24, color: 'text.secondary', fontSize: '0.68rem' }}>
+          Image By Vecteezy
+        </Link>
       </Box>
 
       <Box component="main" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: { xs: 2.5, sm: 5, md: 7 }, py: { xs: 4, md: 7 }, bgcolor: 'background.paper' }}>
