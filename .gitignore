@@ -5,6 +5,7 @@ contracts/build/keys/
 contracts/build/zkir/
 contracts/managed/
 .env
+prompt.md
 .midnight-state.json
 .midnight-wallet-state/
 midnight-level-db/
